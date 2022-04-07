@@ -1,4 +1,4 @@
-import { Heading, SkeletonText, Table, Tbody, Td, Thead, Tr, Text, Container, VStack, Th, IconButton, HStack, Tooltip, Editable, EditableInput, EditablePreview, useToast, Progress, Box, Image, Badge } from '@chakra-ui/react';
+import { Heading, SkeletonText, Table, Tbody, Td, Thead, Tr, Text, Container, VStack, Th, IconButton, HStack, Tooltip, Editable, EditableInput, EditablePreview, useToast, Box, Image, Badge } from '@chakra-ui/react';
 import type { NextPage } from 'next';
 import Link from 'next/link';
 import { useCollection, useResource } from 'react-ketting';
@@ -6,13 +6,14 @@ import type { Article } from '../../model/Article';
 import type { StorageItem } from '../../model/StorageItem';
 import { Resource } from 'ketting';
 import { DateTime } from 'luxon';
-import { AddIcon, MinusIcon } from '@chakra-ui/icons';
+import { AddIcon, EditIcon, MinusIcon } from '@chakra-ui/icons';
 import { AddAPhoto } from '@mui/icons-material';
 import TakeItemModal from '../../components/TakeItemModal';
 import { useCallback, useEffect, useState } from 'react';
 import StoreItemModal from '../../components/StoreItemModal';
 import StorageItemService from '../../service/StorageItemService';
 import ToastService from '../../service/ToastService';
+import ArticleInfoTable from '../../components/ArticleInfoTable';
 
 interface ArticlePageProps {
     gtin: string | string[] | undefined
@@ -21,9 +22,9 @@ interface ArticlePageProps {
 const ArticlePage: NextPage<ArticlePageProps> = ({ gtin }) => {
     const toast = useToast();
 
-    const [totalStorageItems, setTotalStorageItems] = useState(0);
     const [currentEditStorageItem, setCurrentEditStorageItem] = useState<Resource<StorageItem> | undefined>();
     const [storeItemModalOpen, setStoreItemModalOpen] = useState(false);
+    const [articleEditMode, setArticleEditMode] = useState(false);
 
     const {
         resource: articleResource,
@@ -56,15 +57,23 @@ const ArticlePage: NextPage<ArticlePageProps> = ({ gtin }) => {
 
     const onCloseTakeItemModal = useCallback(() => setCurrentEditStorageItem(undefined), []);
 
-    useEffect(() => {
-        Promise.all(storageItems.map(item => item.get()))
-            .then(storageItems => {
-                const total = storageItems.map(item => item.data)
-                    .reduce((prev, next) => prev + next.amount, 0);
+    const onSaveButtonClicked = useCallback(async (article) => {
+        if (JSON.stringify(article) === JSON.stringify(articleState)) {
+            setArticleEditMode(false);
+            return;
+        }
 
-                setTotalStorageItems(total);
-            });
-    }, [storageItems]);
+        try {
+            setArticleData({ ...articleState, ...article })
+            await submitArticle();
+            setArticleEditMode(false);
+            ToastService.updateArticleSuccess(toast);
+        }
+        catch (e) {
+            console.error(e);
+            ToastService.updateArticleFailed(toast);
+        }
+    }, [articleState, setArticleData, submitArticle, toast]);
 
     if (articleError) return <Text>Der Artikel konnte nicht geladen werden: {JSON.stringify(articleError)}</Text>;
 
@@ -82,7 +91,6 @@ const ArticlePage: NextPage<ArticlePageProps> = ({ gtin }) => {
                 onClose={() => setStoreItemModalOpen(false)}
                 onSubmit={async (bestbefore, itemCount) => {
                     await StorageItemService.storeItem(storageItemsResource, itemCount, bestbefore, articleResource.uri);
-
                     setStoreItemModalOpen(false);
                 }}
             />
@@ -98,74 +106,24 @@ const ArticlePage: NextPage<ArticlePageProps> = ({ gtin }) => {
                                         <Image fallback={<AddAPhoto />} src="/4388840219872.webp" alt="Artikelbild" objectFit="contain" height="100%" width="100%" />
                                     </Box>
                                     <Box flexGrow={1}>
-                                        <HStack marginBottom="4">
+                                        <HStack marginBottom="4" paddingRight="6" justifyContent="space-between">
                                             <Heading as="h2" size="lg">{articleState?.name}</Heading>
+                                            {
+                                                articleEditMode === true
+                                                    ? null
+                                                    : (
+                                                        <Tooltip label="Artikel bearbeiten">
+                                                            <IconButton aria-label="Bearbeiten" size="sm" icon={<EditIcon />} onClick={() => setArticleEditMode(true)} />
+                                                        </Tooltip>
+                                                    )
+                                            }
                                         </HStack>
-                                        <Table size="sm">
-                                            <Tbody>
-                                                <Tr>
-                                                    <Th>GTIN</Th>
-                                                    <Td>{articleState.gtin}</Td>
-                                                </Tr>
-                                                <Tr>
-                                                    <Th>Bezeichnung</Th>
-                                                    <Td>
-                                                        <Editable defaultValue={articleState.name} onSubmit={async (value) => {
-                                                            setArticleData(({ ...articleState, name: value.trim() }));
-
-                                                            try {
-                                                                await submitArticle();
-
-                                                                toast({
-                                                                    title: 'Artikel gespeichert',
-                                                                    description: 'Deine Änderungen an diesem Artikel wurden gespeichert',
-                                                                    status: 'success',
-                                                                    duration: 5000,
-                                                                    isClosable: true
-                                                                });
-                                                            }
-                                                            catch (e) {
-                                                                toast({
-                                                                    title: 'Fehler beim Speichern',
-                                                                    description: 'Deine Änderungen an diesem Artikel konnten leider nicht gespeichert werden',
-                                                                    status: 'error',
-                                                                    duration: 10000,
-                                                                    isClosable: true
-                                                                });
-                                                            }
-
-                                                        }}>
-                                                            <EditablePreview />
-                                                            <EditableInput />
-                                                        </Editable>
-                                                    </Td>
-                                                </Tr>
-                                                <Tr>
-                                                    <Th>Schlagworte</Th>
-                                                    <Td>
-                                                        <HStack justifyContent="flex-start">
-                                                            {articleState.keywords.map((keyword) => (
-                                                                <Link passHref key={keyword} href={`/keyword/${encodeURIComponent(keyword.toLocaleLowerCase())}`}>
-                                                                    <a><Badge>{keyword}</Badge></a>
-                                                                </Link>
-                                                            ))}
-                                                        </HStack>
-                                                    </Td>
-                                                </Tr>
-                                                <Tr>
-                                                    <Th>Mindestbestand</Th>
-                                                    <Td>
-                                                        {articleState.targetAmount}
-                                                    </Td>
-                                                </Tr>
-                                                <Tr>
-                                                    <Th>Füllstand</Th>
-                                                    <Td>
-                                                        <Progress max={articleState.targetAmount} value={totalStorageItems} />
-                                                    </Td>
-                                                </Tr>
-                                            </Tbody>
-                                        </Table>
+                                        <ArticleInfoTable size="md"
+                                            article={articleState}
+                                            editMode={articleEditMode}
+                                            onCancelButtonClicked={() => setArticleEditMode(false)}
+                                            onSaveButtonClicked={onSaveButtonClicked}
+                                        />
                                     </Box>
                                 </HStack>
                             )
