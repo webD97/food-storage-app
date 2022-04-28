@@ -1,6 +1,5 @@
-import { Heading, SkeletonText, Table, Tbody, Td, Thead, Tr, Text, Container, VStack, Th, IconButton, HStack, Tooltip, Editable, EditableInput, EditablePreview, useToast, Box, Image, Badge } from '@chakra-ui/react';
+import { Heading, SkeletonText, Table, Tbody, Td, Thead, Tr, Text, Container, VStack, Th, IconButton, HStack, Tooltip, useToast, Box, Image } from '@chakra-ui/react';
 import type { NextPage } from 'next';
-import Link from 'next/link';
 import { useCollection, useResource } from 'react-ketting';
 import type { Article } from '../../model/Article';
 import type { StorageItem } from '../../model/StorageItem';
@@ -9,11 +8,12 @@ import { DateTime } from 'luxon';
 import { AddIcon, EditIcon, MinusIcon } from '@chakra-ui/icons';
 import { AddAPhoto } from '@mui/icons-material';
 import TakeItemModal from '../../components/TakeItemModal';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 import StoreItemModal from '../../components/StoreItemModal';
 import StorageItemService from '../../service/StorageItemService';
 import ToastService from '../../service/ToastService';
 import ArticleInfoTable from '../../components/ArticleInfoTable';
+import ArticleImage from '../../components/ArticleImage';
 
 interface ArticlePageProps {
     gtin: string | string[] | undefined
@@ -102,9 +102,7 @@ const ArticlePage: NextPage<ArticlePageProps> = ({ gtin }) => {
                             ? <Text>Artikel wird geladen</Text>
                             : (
                                 <HStack alignItems="flex-start" gap="12">
-                                    <Box width="md" height="xs" borderWidth="1px" borderRadius="lg" flexGrow={0} padding=".5em">
-                                        <Image fallback={<AddAPhoto />} src="/4388840219872.webp" alt="Artikelbild" objectFit="contain" height="100%" width="100%" />
-                                    </Box>
+                                    <ArticleImage src="/4388840219872.webp" />
                                     <Box flexGrow={1}>
                                         <HStack marginBottom="4" paddingRight="6" justifyContent="space-between">
                                             <Heading as="h2" size="lg">{articleState?.name}</Heading>

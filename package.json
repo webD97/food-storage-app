@@ -16,6 +16,7 @@
     "@ericblade/quagga2": "^1.6.0",
     "@mui/icons-material": "^5.5.1",
     "chakra-dayzed-datepicker": "^0.1.6",
+    "classnames": "^2.3.1",
     "dayzed": "^3.2.2",
     "framer-motion": "^6.2.8",
     "luxon": "^2.3.1",
