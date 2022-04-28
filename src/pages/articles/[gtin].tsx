@@ -102,7 +102,7 @@ const ArticlePage: NextPage<ArticlePageProps> = ({ gtin }) => {
                             ? <Text>Artikel wird geladen</Text>
                             : (
                                 <HStack alignItems="flex-start" gap="12">
-                                    <ArticleImage src="/4388840219872.webp" />
+                                    <ArticleImage src="/4388840219872.webp" onImageUpdated={(url) => console.log(url)} />
                                     <Box flexGrow={1}>
                                         <HStack marginBottom="4" paddingRight="6" justifyContent="space-between">
                                             <Heading as="h2" size="lg">{articleState?.name}</Heading>

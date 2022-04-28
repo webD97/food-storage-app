@@ -7,17 +7,19 @@ import styles from './ArticleImage.module.css';
 import Camera from "./Camera";
 
 export interface ArticleImageProps {
-    src?: string
+    src?: string,
+    onImageUpdated?: (blobOrUrl: Blob | string) => void
 }
 
 const ArticleImage: NextComponentType<{}, {}, ArticleImageProps> = (props) => {
-    const { src } = props;
+    const { src, onImageUpdated = () => undefined } = props;
 
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const [overlayHidden, setOverlayHidden] = useState(true);
     const [showImageUrlInput, setShowImageUrlInput] = useState(false);
     const [showCamera, setShowCamera] = useState(false);
+    const [currentUrl, setCurrentUrl] = useState('');
 
     const [temporaryImageSrc, setTemporaryImageSrc] = useState<string | undefined>();
 
@@ -35,14 +37,16 @@ const ArticleImage: NextComponentType<{}, {}, ArticleImageProps> = (props) => {
         }
     }
 
-    function updateTemporarySrc(thing: Blob | File) {
+    function updateTemporarySrc(thing: Blob) {
         const reader = new FileReader();
 
         reader.onload = (e) => {
-            setTemporaryImageSrc(e.target!.result as string)
+            setTemporaryImageSrc(e.target!.result as string);
         };
-
+        
         reader.readAsDataURL(thing);
+
+        onImageUpdated(thing);
     }
 
     function handleCameraImageTaken(blob: Blob) {
@@ -55,6 +59,11 @@ const ArticleImage: NextComponentType<{}, {}, ArticleImageProps> = (props) => {
         if (!file) return;
 
         updateTemporarySrc(file);
+    }
+
+    function handleUrlChange(url: string) {
+        setTemporaryImageSrc(url);
+        onImageUpdated(url);
     }
 
     return (
@@ -119,9 +128,9 @@ const ArticleImage: NextComponentType<{}, {}, ArticleImageProps> = (props) => {
                                             ? null
                                             : (
                                                 <InputGroup size="md" position="absolute" top="calc(50% + 3em)" width="75%">
-                                                    <Input autoFocus paddingRight="4.5rem" backgroundColor="rgba(255, 255, 255, .33)" />
+                                                    <Input autoFocus paddingRight="4.5rem" backgroundColor="rgba(255, 255, 255, .33)" value={currentUrl} onChange={(e) => setCurrentUrl(e.target.value)} />
                                                     <InputRightElement width="4.5rem">
-                                                        <Button variant="ghost" color="unset" h="1.75rem" size="sm">OK</Button>
+                                                        <Button variant="ghost" color="unset" h="1.75rem" size="sm" onClick={() => handleUrlChange(currentUrl)}>OK</Button>
                                                     </InputRightElement>
                                                 </InputGroup>
                                             )
